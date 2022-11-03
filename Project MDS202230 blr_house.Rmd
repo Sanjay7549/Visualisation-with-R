@@ -1,0 +1,99 @@
+---
+title: "Bengaluru House Price Analytics Report"
+author: 'Name : Sanjay Kumar Sinha   Roll Number : MDS202230'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction
+
+## In this project we analyse the key things that a potential home buyer considers before purchasing a house. The location, the size of the property, vicinity to offices, schools and the most important factor - the price.
+
+## Buying a house has always been a tricky choice, especially in a metro city like Bengaluru. With its millennial crowd, vibrant culture, great climate and a slew of job opportunities, it is difficult to ascertain the price of a house in Bengaluru.
+
+
+# Dataset Description
+
+## The dataset originally had 9 columns and 13320 rows
+
+## The data has been obtained from the website 
+## https://www.kaggle.com/datasets/amitabhajoy/bengaluru-house-price-data
+
+
+
+```{r, echo=FALSE}
+# Importing libraries
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tm)
+library(stringr)
+library(corrplot)
+
+
+data = read.csv(file = "Bengaluru_House_Data.csv", header = T)
+df = data.frame(data)
+head(df)
+summary(df)
+```
+
+```{r, echo=FALSE}
+# Finding missing values and cleaning data frame
+df <- replace(df, df=='', NA)
+
+missing_values = colSums(is.na(df))# missing values in each column
+missing_values
+
+df[,c(2,5)] = list(NULL)
+df = na.omit(df)
+
+```
+
+
+
+```{r ,warning=FALSE, echo=FALSE}
+# Pre-Processing the data
+
+# create BHK from size column in numeric type
+
+df$BHK <- 0
+df$BHK = extract_numeric(df$size)  # using tidyr
+df = df[,-3]
+
+
+# total_sqft column in required format
+
+
+df = subset(df, removeNumbers(data$total_sqft) == "")  
+df$area_sqft = as.numeric(gsub(".*?([0-9]+).*", "\\1", df$total_sqft))
+df = df[,-3]
+
+```
+
+
+
+```{r, echo=FALSE}
+# Removing Outlyers
+
+# delete rows where bath > bhk
+df = subset(df, df$bath <= df$BHK)
+
+# delete rows where bhk > 10
+df = subset(df, df$BHK <= 10)
+
+# delete rows where area_sqft > 15000
+df = subset(df, df$area_sqft <= 15000)
+```
+
+
+
+
+
+```{r, echo=FALSE}
+# Including Plots
+
+```
+
+
