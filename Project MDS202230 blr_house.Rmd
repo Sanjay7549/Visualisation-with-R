@@ -1,25 +1,32 @@
 ---
 title: "Bengaluru House Price Analytics Report"
-author: 'Name : Sanjay Kumar Sinha   Roll Number : MDS202230'
+author: 'Name : Sanjay Kumar Sinha          Roll Number : MDS202230'
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
 ```
 
 # Introduction
 
-## In this project we analyse the key things that a potential home buyer considers before purchasing a house. The location, the size of the property, vicinity to offices, schools and the most important factor - the price.
+In this project we analyse the key things that a potential home buyer considers before purchasing a house. The location, the size of the property, vicinity to offices, schools and the most important factor - the price.
 
-## Buying a house has always been a tricky choice, especially in a metro city like Bengaluru. With its millennial crowd, vibrant culture, great climate and a slew of job opportunities, it is difficult to ascertain the price of a house in Bengaluru.
+Buying a house has always been a tricky choice, especially in a metro city like Bengaluru. With its millennial crowd, vibrant culture, great climate and a slew of job opportunities, it is difficult to ascertain the price of a house.
 
 
 # Dataset Description
 
-## The dataset originally had 9 columns and 13320 rows
+The dataset has details of some of the houses in Bengaluru spread across different locations. It originally had 9 columns and 13320 rows. Some of the attributes are location of the house, area in sqft, number of bathroom, number of balcony, price, etc.
 
-## The data has been obtained from the website 
-## https://www.kaggle.com/datasets/amitabhajoy/bengaluru-house-price-data
+We cleaned the data and preprocessed it and are currently dealing with 8 variables out of which 5 (area_type, BHK, bath, balcony and location) are categorical and rest 3 (price, area_sqft, price_per_sqft) are numerical
+
+The data has been obtained from the website 
+https://www.kaggle.com/datasets/amitabhajoy/bengaluru-house-price-data
 
 
 
@@ -31,20 +38,23 @@ library(tidyr)
 library(tm)
 library(stringr)
 library(corrplot)
+library(tidyverse)
 
 
 data = read.csv(file = "Bengaluru_House_Data.csv", header = T)
 df = data.frame(data)
-head(df)
-summary(df)
+#head(df)
+#summary(df)
+theme_update(plot.title= element_text(hjust = 0.5, size =10))
 ```
+
 
 ```{r, echo=FALSE}
 # Finding missing values and cleaning data frame
 df <- replace(df, df=='', NA)
 
 missing_values = colSums(is.na(df))# missing values in each column
-missing_values
+#missing_values
 
 df[,c(2,5)] = list(NULL)
 df = na.omit(df)
@@ -70,6 +80,8 @@ df = subset(df, removeNumbers(data$total_sqft) == "")
 df$area_sqft = as.numeric(gsub(".*?([0-9]+).*", "\\1", df$total_sqft))
 df = df[,-3]
 
+df$price_per_sqft = df$price / df$area_sqft
+
 ```
 
 
@@ -80,20 +92,103 @@ df = df[,-3]
 # delete rows where bath > bhk
 df = subset(df, df$bath <= df$BHK)
 
-# delete rows where bhk > 10
-df = subset(df, df$BHK <= 10)
+# delete rows where bhk > 5
+df = subset(df, df$BHK <= 5)
 
-# delete rows where area_sqft > 15000
-df = subset(df, df$area_sqft <= 15000)
+# delete rows where area_sqft > 4000
+df = subset(df, df$area_sqft <= 4000)
 ```
+
+
+```{r, echo=FALSE}
+# Reconverting BHK, bath, balcony into catregorical form
+df$BHK = as.character(df$BHK)
+df$bath = as.character(df$bath)
+df$balcony = as.character(df$balcony)
+
+```
+
+
+
+
+
+
+```{r, echo=FALSE }
+# Including Plots
+
+# Pie Chart of BHK
+
+df1=df %>% group_by(BHK) %>% summarise(count=n()) 
+df1$count = df1$count/sum(df1$count)*100
+df1$count = round(df1$count, digits = 2)
+df1$BHK = factor(df1$BHK,levels= as.character(1:5))
+ggplot(df1, aes(x="",y=count, fill=BHK)) +  geom_col()+ geom_text(aes(x=1.56,label= count), size=3, angle = 60, position = position_stack(vjust=0.5))+coord_polar(theta='y', direction = -1)+theme_void() +ggtitle('Pie Chart of BHK')+ theme(plot.title = element_text(size=15))
+
+
+
+
+```
+
+
+
+
+
+Here we observe that most of the houses are either 2-BHK or 3-BHK
+
+
+
+```{r, echo=FALSE, warning = FALSE, fig.width = 15,     fig.height=10}
+# Scatterplot House Area v/s Price
+ggplot(df, aes(x= area_sqft, y=price, color=area_type)) + geom_jitter() + ylim(0,500) +facet_wrap(~area_type) + 
+labs(x='Area (sq. ft)', y='Price (in lacs)', title='Area v/s Price Scatterplot')+ theme_grey(base_size = 30)+ theme(legend.position = 'None')
+
+```
+
+
+
+
+
+From the scatterplot we observe that price of the house increases as the area of the house increaes
+
+
+```{r, echo=FALSE, warning = FALSE, fig.width = 20, fig.height=15}
+# Boxplot BHK v/s Price
+
+ggplot(df, aes(x = BHK , y = price, 
+                             fill = BHK)) +
+    theme(legend.position = 'None')+
+    xlab("BHK")+ ylab("Price (in lacs)") +
+    geom_boxplot() + stat_boxplot(geom = 'errorbar')+
+      ggtitle('BHK v/s Price Boxplot')+ ylim(0,500)+
+  theme(plot.title = element_text(size=50), axis.text =  element_text(size=30), axis.title =  element_text(face='bold',size=40))
+
+```
+
+
+
+
+From the boxplot we observe that the price of 1-BHK, 2-BHK and 3-BHK houses does not vary much compared to 4-BHK and 5-BHK. Therefore we conclude that as the BHK increases, variation in price also increases. Moreover price of 5-BHK houses are less than that of 4-BHK. It is mainly due to the location factor.
 
 
 
 
 
 ```{r, echo=FALSE}
-# Including Plots
+
+# Heatmap of variables
+df2 = data.frame(df)
+df2$BHK = as.numeric(df2$BHK)
+df2$bath = as.numeric(df2$bath)
+df2$balcony = as.numeric(df2$balcony)
+num_cols = sapply(df2,is.numeric)
+num_cols = num_cols[-6]
+cor_data = cor(df2[,num_cols])
+corrplot(cor_data, method = "color", title = 'Correlation Heatmap', mar=c(0,0,1,0))
+
 
 ```
 
 
+
+
+From the heatmap we observe that the Area of the house is positively correlated wih its Price as we expect it to be. Also the number of bathrooms in a house is strongly positively correlated with BHK.
